@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#bebea0</color>
+    <color name="primary_dark">#9b9b7d</color>
+    <color name="beacon_distance">#0000ff</color>
+</resources>
