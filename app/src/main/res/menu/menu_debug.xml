@@ -1,5 +1,5 @@
 <menu xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.example.michaeldegraw.babyalert.SettingsActivity">
+    tools:context="com.example.michaeldegraw.babyalert.DebugActivity">
     <!--
     <item
         android:id="@+id/action_settings"
