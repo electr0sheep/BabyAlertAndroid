@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 
 public class DebugActivity extends Activity {
 
@@ -33,5 +35,9 @@ public class DebugActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void alarmButtonClickHandler(View view) {
+        Toast.makeText(this, "Alarm will sound in 10 seconds", Toast.LENGTH_LONG).show();
     }
 }

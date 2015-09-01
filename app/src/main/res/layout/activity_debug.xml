@@ -8,11 +8,15 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.michaeldegraw.babyalert.DebugActivity">
 
-    <ImageView
-        android:id="@+id/imageView"
+    <Button
+        android:id="@+id/button"
+        style="@style/button_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:src="@drawable/move_along" />
-
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="30dp"
+        android:background="@drawable/blue_button"
+        android:onClick="alarmButtonClickHandler"
+        android:text="Test Alarm" />
 </RelativeLayout>
