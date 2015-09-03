@@ -1,13 +1,25 @@
 package com.example.michaeldegraw.babyalert;
 
 import android.app.Activity;
+import android.content.Context;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
+import java.io.IOException;
+
 public class DebugActivity extends Activity {
+
+    final Context context = this;
+    private MediaPlayer player;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +50,49 @@ public class DebugActivity extends Activity {
     }
 
     public void alarmButtonClickHandler(View view) {
-        Toast.makeText(this, "Alarm will sound in 10 seconds", Toast.LENGTH_LONG).show();
+        Button alarm = (Button) findViewById(R.id.btnAlarm);
+        Button alarmStop = (Button) findViewById(R.id.btnAlarmStop);
+
+        Toast.makeText(this, "Playing alarm...", Toast.LENGTH_SHORT).show();
+        play(this, getAlarmSound());
+        alarmStop.setVisibility(View.VISIBLE);
+        alarm.setVisibility(View.INVISIBLE);
+    }
+
+    public void alarmStopButtonClickHandler(View view) {
+        Button alarm = (Button) findViewById(R.id.btnAlarm);
+        Button alarmStop = (Button) findViewById(R.id.btnAlarmStop);
+
+        Toast.makeText(this, "Stopping alarm...", Toast.LENGTH_SHORT).show();
+        player.stop();
+        alarmStop.setVisibility(View.INVISIBLE);
+        alarm.setVisibility(View.VISIBLE);
+    }
+
+    private void play(Context context, Uri alert) {
+        player = new MediaPlayer();
+        try {
+            player.setDataSource(context, alert);
+            final AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (audio.getStreamVolume(AudioManager.STREAM_ALARM) != 0) {
+                player.setAudioStreamType(AudioManager.STREAM_ALARM);
+                player.prepare();
+                player.start();
+            }
+        } catch (IOException e) {
+            // this may be the worst error message I've ever seen...
+            Log.e("Error...", "Check code...");
+        }
+    }
+
+    private Uri getAlarmSound() {
+        Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (alertSound == null) {
+            alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        }
+        if (alertSound == null) {
+            alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+        }
+        return alertSound;
     }
 }

@@ -9,7 +9,7 @@
     tools:context="com.example.michaeldegraw.babyalert.DebugActivity">
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/btnAlarm"
         style="@style/button_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -19,4 +19,17 @@
         android:background="@drawable/blue_button"
         android:onClick="alarmButtonClickHandler"
         android:text="Test Alarm" />
+
+    <Button
+        android:id="@+id/btnAlarmStop"
+        style="@style/button_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="30dp"
+        android:background="@drawable/blue_button"
+        android:onClick="alarmStopButtonClickHandler"
+        android:text="Stop Alarm"
+        android:visibility="invisible" />
 </RelativeLayout>
