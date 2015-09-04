@@ -21,7 +21,9 @@ public class DebugActivity extends Activity {
 
     final Context context = this;
     private MediaPlayer player;
-    private int currentVolume;
+    private int currentAlarmVolume;
+    private int currentMusicVolume;
+    private int currentTalkVolume;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,25 +73,32 @@ public class DebugActivity extends Activity {
         player.stop();
         player.release();
         vib.cancel();
-        audio.setStreamVolume(AudioManager.STREAM_ALARM, currentVolume, 0);
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, currentAlarmVolume, 0);
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, currentMusicVolume, 0);
+        audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, currentTalkVolume, 0);
         alarmStop.setVisibility(View.INVISIBLE);
         alarm.setVisibility(View.VISIBLE);
     }
 
 
     // THIS FUNCTIION NEEDS TO PLAY THE ALARM, NO MATTER WHAT
-    //  TEST SCENARIOS INCLUDE: IF THE USER IS ON THE PHONE,
-    //  IF THE USER IS LISTENING TO MUSIC, IF THE ALARM VOLUME
-    //  HAS BEEN SET TO ZERO, OR LOW, IF THE USER HAS HEADPHONES
-    //  ON
+    //  TEST SCENARIOS INCLUDE:
+    //   IF THE USER IS ON THE PHONE
+    //   resolved with setStreamVolume for music IF THE USER IS LISTENING TO MUSIC
+    //   resolved with setStreamVolume for alarm IF THE ALARM VOLUME HAS BEEN SET TO ZERO, OR LOW
+    //   IF THE USER HAS HEADPHONES ON
     private void play(Context context, Uri alert) {
         player = new MediaPlayer();
-        long[] times = {0, 100, 100, 100, 500};
+        long[] times = {0, 1000};
         try {
             player.setDataSource(context, alert);
             final AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             final Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-            currentVolume = audio.getStreamVolume(AudioManager.STREAM_ALARM);
+            currentAlarmVolume = audio.getStreamVolume(AudioManager.STREAM_ALARM);
+            currentMusicVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+            currentTalkVolume = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
+            audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+            audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, 0);
             audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
             player.setAudioStreamType(AudioManager.STREAM_ALARM);
             player.prepare();
