@@ -2,12 +2,14 @@ package com.example.michaeldegraw.babyalert;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -74,8 +76,8 @@ public class DebugActivity extends Activity {
         player.release();
         vib.cancel();
         audio.setStreamVolume(AudioManager.STREAM_ALARM, currentAlarmVolume, 0);
-        audio.setStreamVolume(AudioManager.STREAM_MUSIC, currentMusicVolume, 0);
-        audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, currentTalkVolume, 0);
+        //audio.setStreamVolume(AudioManager.STREAM_MUSIC, currentMusicVolume, 0);
+        //audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, currentTalkVolume, 0);
         alarmStop.setVisibility(View.INVISIBLE);
         alarm.setVisibility(View.VISIBLE);
     }
@@ -95,11 +97,12 @@ public class DebugActivity extends Activity {
             final AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             final Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
             currentAlarmVolume = audio.getStreamVolume(AudioManager.STREAM_ALARM);
-            currentMusicVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
-            currentTalkVolume = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
-            audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
-            audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, 0);
+            //currentMusicVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+            //currentTalkVolume = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
+            //audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+            //audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, 0);
             audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
+            Log.d("HeyWhatsUp", Integer.toString(audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)));
             player.setAudioStreamType(AudioManager.STREAM_ALARM);
             player.prepare();
             player.start();
@@ -113,13 +116,10 @@ public class DebugActivity extends Activity {
     }
 
     private Uri getAlarmSound() {
-        Uri alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        if (alertSound == null) {
-            alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        }
-        if (alertSound == null) {
-            alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-        }
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        Uri alertSound;
+        String alarmString = sharedPref.getString("alarm_tone", RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
+        alertSound = Uri.parse(alarmString);
         return alertSound;
     }
 }
