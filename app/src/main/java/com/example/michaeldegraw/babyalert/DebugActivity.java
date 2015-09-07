@@ -17,7 +17,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import java.io.IOException;
 
@@ -41,13 +40,6 @@ public class DebugActivity extends Activity {
         vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         currentVolumes = new int[7];
         player = new MediaPlayer();
-
-        player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            public void onCompletion(MediaPlayer mp) {
-                Toast.makeText(context, "Arrived", Toast.LENGTH_SHORT).show();
-                //finish();
-            }
-        });
     }
 
 
@@ -100,11 +92,7 @@ public class DebugActivity extends Activity {
         audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
 
         // Play sound
-        if (player.isPlaying()) {
-            Toast.makeText(this, "Quit button mashing", Toast.LENGTH_SHORT).show();
-        } else {
-            playAlarmSound();
-        }
+        playAlarmSound();
 
         // Swap buttons
         alarmStop.setVisibility(View.VISIBLE);
@@ -117,13 +105,9 @@ public class DebugActivity extends Activity {
         Button alarmStop = (Button) findViewById(R.id.btnAlarmStop);
 
         // Stop sound and stop vibrate
-        if (player.isPlaying()) {
-            player.stop();
-            player.reset();
-            vib.cancel();
-        } else {
-            Toast.makeText(this, "I told you, quit button mashing!", Toast.LENGTH_SHORT).show();
-        }
+        player.stop();
+        player.reset();
+        vib.cancel();
 
         // Return system volumes to previoius
         audio.setStreamVolume(AudioManager.STREAM_ALARM, currentVolumes[0], 0);
