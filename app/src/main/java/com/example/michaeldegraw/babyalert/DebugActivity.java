@@ -41,14 +41,6 @@ public class DebugActivity extends Activity {
         vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         currentVolumes = new int[7];
         player = new MediaPlayer();
-        try {
-            player.setDataSource(context, getAlarmSound());
-            player.setAudioStreamType(AudioManager.STREAM_ALARM);
-            player.prepare();
-        } catch (IOException e) {
-            // this may be the worst error message I've ever seen...
-            Log.e("Error...", "Check code...");
-        }
 
         player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             public void onCompletion(MediaPlayer mp) {
@@ -126,7 +118,8 @@ public class DebugActivity extends Activity {
 
         // Stop sound and stop vibrate
         if (player.isPlaying()) {
-            player.pause();
+            player.stop();
+            player.reset();
             vib.cancel();
         } else {
             Toast.makeText(this, "I told you, quit button mashing!", Toast.LENGTH_SHORT).show();
@@ -155,6 +148,13 @@ public class DebugActivity extends Activity {
     //   IF THE USER HAS HEADPHONES ON
     private void playAlarmSound() {
         long[] times = {0, 1000};
+        try {
+            player.setDataSource(context, getAlarmSound());
+            player.setAudioStreamType(AudioManager.STREAM_ALARM);
+            player.prepare();
+        } catch (IOException e) {
+            Log.e("MediaPlayerError", "Error preparing player in playAlarmSound");
+        }
         player.start();
         if (vib.hasVibrator()) {
             vib.vibrate(times, 0);
@@ -162,7 +162,7 @@ public class DebugActivity extends Activity {
     }
 
 
-    private Uri getAlarmSound() {
+    protected Uri getAlarmSound() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String alarmString = sharedPref.getString("alarm_tone", RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
         return Uri.parse(alarmString);
