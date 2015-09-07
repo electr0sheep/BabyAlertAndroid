@@ -1,3 +1,5 @@
+// resolved with android:configChanges in manifest : MEDIAPLAYER STOPS WHEN SWITCHED TO LANDSCAPE
+
 package com.example.michaeldegraw.babyalert;
 
 import android.app.Activity;
@@ -22,15 +24,46 @@ import java.io.IOException;
 public class DebugActivity extends Activity {
 
     final Context context = this;
+    // NOTE TO SELF:
+    // I BELIEVE THE REASON THE ALARM SOUND IS SO WONKY IS THAT
+    // THE MediaPlayer OBJECT IS GLOBAL, BUT IT'S STATE IS CONSTANTLY
+    // BEING ALTERED. ONLY START IT AND STOP IT ONCE
     private MediaPlayer player;
-    private int currentAlarmVolume;
-    private int currentMusicVolume;
-    private int currentTalkVolume;
+    private AudioManager audio;
+    private Vibrator vib;
+    private int[] currentVolumes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_debug);
+        audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        currentVolumes = new int[7];
+        player = new MediaPlayer();
+        try {
+            player.setDataSource(context, getAlarmSound());
+            player.setAudioStreamType(AudioManager.STREAM_ALARM);
+            player.prepare();
+        } catch (IOException e) {
+            // this may be the worst error message I've ever seen...
+            Log.e("Error...", "Check code...");
+        }
+
+        player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            public void onCompletion(MediaPlayer mp) {
+                Toast.makeText(context, "Arrived", Toast.LENGTH_SHORT).show();
+                //finish();
+            }
+        });
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        player.stop();
+        player.release();
     }
 
     @Override
@@ -56,70 +89,82 @@ public class DebugActivity extends Activity {
     }
 
     public void alarmButtonClickHandler(View view) {
+        // Set variables for alarm start and stop buttons
         Button alarm = (Button) findViewById(R.id.btnAlarm);
         Button alarmStop = (Button) findViewById(R.id.btnAlarmStop);
 
-        Toast.makeText(this, "Playing alarm...", Toast.LENGTH_SHORT).show();
-        play(this, getAlarmSound());
+        // Store current system volumes
+        currentVolumes[0] = audio.getStreamVolume(AudioManager.STREAM_ALARM);
+        currentVolumes[1] = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+        currentVolumes[2] = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
+        currentVolumes[3] = audio.getStreamVolume(AudioManager.STREAM_RING);
+        currentVolumes[4] = audio.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+        currentVolumes[5] = audio.getStreamVolume(AudioManager.STREAM_SYSTEM);
+        currentVolumes[6] = audio.getStreamVolume(AudioManager.STREAM_DTMF);
+
+        // Modify system volumes
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+        audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, 0);
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
+
+        // Play sound
+        if (player.isPlaying()) {
+            Toast.makeText(this, "Quit button mashing", Toast.LENGTH_SHORT).show();
+        } else {
+            playAlarmSound();
+        }
+
+        // Swap buttons
         alarmStop.setVisibility(View.VISIBLE);
         alarm.setVisibility(View.INVISIBLE);
     }
 
     public void alarmStopButtonClickHandler(View view) {
+        // Set variables for alarm start and stop buttons
         Button alarm = (Button) findViewById(R.id.btnAlarm);
         Button alarmStop = (Button) findViewById(R.id.btnAlarmStop);
-        final AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        final Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
 
-        Toast.makeText(this, "Stopping alarm...", Toast.LENGTH_SHORT).show();
-        player.stop();
-        player.release();
-        vib.cancel();
-        audio.setStreamVolume(AudioManager.STREAM_ALARM, currentAlarmVolume, 0);
-        //audio.setStreamVolume(AudioManager.STREAM_MUSIC, currentMusicVolume, 0);
-        //audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, currentTalkVolume, 0);
+        // Stop sound and stop vibrate
+        if (player.isPlaying()) {
+            player.pause();
+            vib.cancel();
+        } else {
+            Toast.makeText(this, "I told you, quit button mashing!", Toast.LENGTH_SHORT).show();
+        }
+
+        // Return system volumes to previoius
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, currentVolumes[0], 0);
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolumes[1], 0);
+        audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, currentVolumes[2], 0);
+        audio.setStreamVolume(AudioManager.STREAM_RING, currentVolumes[3], 0);
+        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, currentVolumes[4], 0);
+        audio.setStreamVolume(AudioManager.STREAM_SYSTEM, currentVolumes[5], 0);
+        audio.setStreamVolume(AudioManager.STREAM_DTMF, currentVolumes[6], 0);
+
+        // Swap buttons
         alarmStop.setVisibility(View.INVISIBLE);
         alarm.setVisibility(View.VISIBLE);
     }
 
 
-    // THIS FUNCTIION NEEDS TO PLAY THE ALARM, NO MATTER WHAT
+    // THIS METHOD NEEDS TO PLAY THE ALARM, NO MATTER WHAT
     //  TEST SCENARIOS INCLUDE:
     //   IF THE USER IS ON THE PHONE
-    //   resolved with setStreamVolume for music IF THE USER IS LISTENING TO MUSIC
-    //   resolved with setStreamVolume for alarm IF THE ALARM VOLUME HAS BEEN SET TO ZERO, OR LOW
+    //   resolved with setStreamVolume for music : IF THE USER IS LISTENING TO MUSIC
+    //   resolved with setStreamVolume for alarm : IF THE ALARM VOLUME HAS BEEN SET TO ZERO, OR LOW
     //   IF THE USER HAS HEADPHONES ON
-    private void play(Context context, Uri alert) {
-        player = new MediaPlayer();
+    private void playAlarmSound() {
         long[] times = {0, 1000};
-        try {
-            player.setDataSource(context, alert);
-            final AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-            final Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-            currentAlarmVolume = audio.getStreamVolume(AudioManager.STREAM_ALARM);
-            //currentMusicVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
-            //currentTalkVolume = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
-            //audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
-            //audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, 0);
-            audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
-            Log.d("HeyWhatsUp", Integer.toString(audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)));
-            player.setAudioStreamType(AudioManager.STREAM_ALARM);
-            player.prepare();
-            player.start();
-            if (vib.hasVibrator()) {
-                vib.vibrate(times, 0);
-            }
-        } catch (IOException e) {
-            // this may be the worst error message I've ever seen...
-            Log.e("Error...", "Check code...");
+        player.start();
+        if (vib.hasVibrator()) {
+            vib.vibrate(times, 0);
         }
     }
 
+
     private Uri getAlarmSound() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        Uri alertSound;
         String alarmString = sharedPref.getString("alarm_tone", RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
-        alertSound = Uri.parse(alarmString);
-        return alertSound;
+        return Uri.parse(alarmString);
     }
 }

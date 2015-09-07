@@ -113,6 +113,10 @@ public class SettingsActivity extends PreferenceActivity {
                         .getString(preference.getKey(), ""));
     }
 
+    // THIS METHOD IS NOT INCLUDED WHEN YOU CREATE A NEW SETTINGS ACTIVITY
+    //  UNFORTUNATELY, THE SETTINGS ACTIVITY WILL CRASH IF YOU DO NOT OVERRIDE
+    //  THIS METHOD. THIS METHOD WAS INTRODUCED IN API 19 TO ADDRESS A VULNERABILITY.
+    //  AS FAR AS I CAN TELL, THE PROPER WAY TO SET IT UP IS THIS WAY.
     protected boolean isValidFragment(String fragmentName) {
         return GeneralPreferenceFragment.class.getName().equals(fragmentName)
                 || NotificationPreferenceFragment.class.getName().equals(fragmentName)
@@ -195,6 +199,10 @@ public class SettingsActivity extends PreferenceActivity {
         }
     }
 
+    // THIS METHOD IS THE ONLY ONE THAT I BUILT PERSONALLY. THE METHOD
+    //  bindPreferenceSummaryToValue IS USEFUL TO MAKE CERTAIN PREFERENCES
+    //  MORE AESTHETICALLY PLEASING. YOU SIMPLY CALL THE METHOD findPreference()
+    //  AND PASS TO IT THE KEY VALUE OF A PREFERENCE IN THAT PARTICULAR FRAGMENT
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class AlarmSoundPreferenceFragment extends PreferenceFragment {
         @Override
