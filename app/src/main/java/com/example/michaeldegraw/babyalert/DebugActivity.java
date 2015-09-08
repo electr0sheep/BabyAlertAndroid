@@ -23,6 +23,12 @@ import java.io.IOException;
 public class DebugActivity extends Activity {
 
     final Context context = this;
+    AudioManager.OnAudioFocusChangeListener audioListener = new AudioManager.OnAudioFocusChangeListener() {
+        @Override
+        public void onAudioFocusChange(int focusChange) {
+
+        }
+    };
     // NOTE TO SELF:
     // I BELIEVE THE REASON THE ALARM SOUND IS SO WONKY IS THAT
     // THE MediaPlayer OBJECT IS GLOBAL, BUT IT'S STATE IS CONSTANTLY
@@ -30,7 +36,10 @@ public class DebugActivity extends Activity {
     private MediaPlayer player;
     private AudioManager audio;
     private Vibrator vib;
-    private int[] currentVolumes;
+    private int currentVolume;
+    private Button alarm;
+    private Button alarmStop;
+    private SharedPreferences sharedPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,15 +47,35 @@ public class DebugActivity extends Activity {
         setContentView(R.layout.activity_debug);
         audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-        currentVolumes = new int[7];
         player = new MediaPlayer();
+        alarm = (Button) findViewById(R.id.btnAlarm);
+        alarmStop = (Button) findViewById(R.id.btnAlarmStop);
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // Temporary string variable to make code more readable
+        String alarmString = sharedPref.getString("alarm_tone", RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
+        try {
+            player.setDataSource(context, Uri.parse(alarmString));
+            player.setAudioStreamType(AudioManager.STREAM_ALARM);
+        } catch (IOException e) {
+            Log.e("MediaPlayerError", "Error preparing media player in onCreate method");
+        }
     }
 
 
     @Override
     protected void onStop() {
         super.onStop();
-        player.stop();
+        if (player.isPlaying()) {
+            simulateStopAlarm();
+            alarm.setVisibility(Button.VISIBLE);
+            alarmStop.setVisibility(Button.INVISIBLE);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
         player.release();
     }
 
@@ -73,54 +102,20 @@ public class DebugActivity extends Activity {
     }
 
     public void alarmButtonClickHandler(View view) {
-        // Set variables for alarm start and stop buttons
-        Button alarm = (Button) findViewById(R.id.btnAlarm);
-        Button alarmStop = (Button) findViewById(R.id.btnAlarmStop);
-
-        // Store current system volumes
-        currentVolumes[0] = audio.getStreamVolume(AudioManager.STREAM_ALARM);
-        currentVolumes[1] = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
-        currentVolumes[2] = audio.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
-        currentVolumes[3] = audio.getStreamVolume(AudioManager.STREAM_RING);
-        currentVolumes[4] = audio.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
-        currentVolumes[5] = audio.getStreamVolume(AudioManager.STREAM_SYSTEM);
-        currentVolumes[6] = audio.getStreamVolume(AudioManager.STREAM_DTMF);
-
-        // Modify system volumes
-        audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
-        audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, 0);
-        audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
-
         // Play sound
-        playAlarmSound();
+        simulateAlarm();
 
         // Swap buttons
-        alarmStop.setVisibility(View.VISIBLE);
-        alarm.setVisibility(View.INVISIBLE);
+        alarmStop.setVisibility(Button.VISIBLE);
+        alarm.setVisibility(Button.INVISIBLE);
     }
 
     public void alarmStopButtonClickHandler(View view) {
-        // Set variables for alarm start and stop buttons
-        Button alarm = (Button) findViewById(R.id.btnAlarm);
-        Button alarmStop = (Button) findViewById(R.id.btnAlarmStop);
-
-        // Stop sound and stop vibrate
-        player.stop();
-        player.reset();
-        vib.cancel();
-
-        // Return system volumes to previoius
-        audio.setStreamVolume(AudioManager.STREAM_ALARM, currentVolumes[0], 0);
-        audio.setStreamVolume(AudioManager.STREAM_MUSIC, currentVolumes[1], 0);
-        audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, currentVolumes[2], 0);
-        audio.setStreamVolume(AudioManager.STREAM_RING, currentVolumes[3], 0);
-        audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, currentVolumes[4], 0);
-        audio.setStreamVolume(AudioManager.STREAM_SYSTEM, currentVolumes[5], 0);
-        audio.setStreamVolume(AudioManager.STREAM_DTMF, currentVolumes[6], 0);
+        simulateStopAlarm();
 
         // Swap buttons
-        alarmStop.setVisibility(View.INVISIBLE);
-        alarm.setVisibility(View.VISIBLE);
+        alarmStop.setVisibility(Button.INVISIBLE);
+        alarm.setVisibility(Button.VISIBLE);
     }
 
 
@@ -130,24 +125,53 @@ public class DebugActivity extends Activity {
     //   resolved with setStreamVolume for music : IF THE USER IS LISTENING TO MUSIC
     //   resolved with setStreamVolume for alarm : IF THE ALARM VOLUME HAS BEEN SET TO ZERO, OR LOW
     //   IF THE USER HAS HEADPHONES ON
-    private void playAlarmSound() {
+    private void simulateAlarm() {
+        // Set inverval for vibrate
         long[] times = {0, 1000};
+
+        // Store current system volumes
+        currentVolume = audio.getStreamVolume(AudioManager.STREAM_ALARM);
+
+        // Request audio focus
+        audio.requestAudioFocus(audioListener, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+
+        // Change the alarm volume to be maximum
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
+
+        // Prepare and start the alarm sound
         try {
-            player.setDataSource(context, getAlarmSound());
-            player.setAudioStreamType(AudioManager.STREAM_ALARM);
             player.prepare();
         } catch (IOException e) {
-            Log.e("MediaPlayerError", "Error preparing player in playAlarmSound");
+            Log.e("MediaPlayerError", "Error preparing player in simulateAlarm");
         }
         player.start();
+
+        // If the system has a vibrate function, use it
         if (vib.hasVibrator()) {
             vib.vibrate(times, 0);
         }
     }
 
+    private void simulateStopAlarm() {
+        // Stop sound if a sound is playing
+        if (player.isPlaying()) {
+            player.stop();
+        }
+
+        // Stop the vibrate
+        vib.cancel();
+
+        // Return alarm volume to what it was previously set to
+        audio.setStreamVolume(AudioManager.STREAM_ALARM, currentVolume, 0);
+
+        boolean audioFocusBool = sharedPref.getBoolean("alarm_resume_playback", true);
+        if (audioFocusBool) {
+            audio.abandonAudioFocus(audioListener);
+        }
+    }
+
 
     protected Uri getAlarmSound() {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String alarmString = sharedPref.getString("alarm_tone", RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
         return Uri.parse(alarmString);
     }

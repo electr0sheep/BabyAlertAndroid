@@ -4,6 +4,12 @@
         android:defaultValue="content://settings/system/alarm_alert"
         android:key="alarm_tone"
         android:ringtoneType="alarm"
-        android:title="Alarm" />
+        android:title="@string/pref_alrarm_sound_alarm_tone_title" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="alarm_resume_playback"
+        android:summary="@string/pref_alarm_sound_audio_focus_summary"
+        android:title="@string/pref_alarm_sound_audio_focus_title" />
 
 </PreferenceScreen>
